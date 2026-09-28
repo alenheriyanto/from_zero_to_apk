@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'database/database_helper.dart';
-import 'models/note.dart';
+import '../database/database_helper.dart';
+import '../models/note.dart';
 
 class EditNotePage extends StatefulWidget {
   final Note note;
@@ -21,6 +21,8 @@ class _EditNotePageState extends State<EditNotePage> {
 
   final formKey = GlobalKey<FormState>();
 
+  bool isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,29 +40,69 @@ class _EditNotePageState extends State<EditNotePage> {
   void dispose() {
     titleController.dispose();
     contentController.dispose();
-
     super.dispose();
   }
 
   Future<void> saveChanges() async {
+    if (isSaving) {
+      return;
+    }
+
+    final title = titleController.text.trim();
+    final content = contentController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Judul dan isi wajib diisi.'),
+        ),
+      );
+
+      return;
+    }
+
     if (!formKey.currentState!.validate()) {
       return;
     }
 
+    setState(() {
+      isSaving = true;
+    });
+
     final updatedNote = Note(
       id: widget.note.id,
-      title: titleController.text.trim(),
-      content: contentController.text.trim(),
+      title: title,
+      content: content,
       createdAt: widget.note.createdAt,
     );
 
-    await DatabaseHelper.instance.updateNote(updatedNote);
+    try {
+      await DatabaseHelper.instance.updateNote(updatedNote);
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memperbarui catatan'),
+        ),
+      );
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isSaving = false;
+      });
     }
-
-    Navigator.pop(context, true);
   }
 
   @override
@@ -68,12 +110,14 @@ class _EditNotePageState extends State<EditNotePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Catatan'),
+        centerTitle: false,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
                 controller: titleController,
@@ -117,13 +161,14 @@ class _EditNotePageState extends State<EditNotePage> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: saveChanges,
-                  child: const Text('Simpan Perubahan'),
+              FilledButton(
+                onPressed: isSaving ? null : saveChanges,
+                child: Text(
+                  isSaving
+                      ? 'Menyimpan...'
+                      : 'Simpan Perubahan',
                 ),
               ),
             ],
