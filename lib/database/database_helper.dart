@@ -66,4 +66,42 @@ class DatabaseHelper {
         .map((map) => Note.fromMap(map))
         .toList();
   }
+
+  Future<Note?> getNoteById(int id) async {
+    final db = await database;
+
+    final maps = await db.query(
+      'notes',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    return Note.fromMap(maps.first);
+  }
+
+  Future<int> updateNote(Note note) async {
+    final db = await database;
+
+    return db.update(
+      'notes',
+      note.toMap(),
+      where: 'id = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  Future<int> deleteNote(int id) async {
+    final db = await database;
+
+    return db.delete(
+      'notes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }
