@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'add_note_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,23 +17,15 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class NotesPage extends StatelessWidget {
+class NotesPage extends StatefulWidget {
   const NotesPage({super.key});
 
-  final notes = const [
-    {
-      'title': 'Belajar Flutter',
-      'content': 'Memahami widget dasar',
-    },
-    {
-      'title': 'Belajar SQLite',
-      'content': 'Menyimpan data lokal',
-    },
-    {
-      'title': 'Project My Notes',
-      'content': 'Membangun aplikasi notes dengan Flutter',
-    },
-  ];
+  @override
+  State<NotesPage> createState() => _NotesPageState();
+}
+
+class _NotesPageState extends State<NotesPage> {
+  final List<Map<String, String>> notes = [];
 
   @override
   Widget build(BuildContext context) {
@@ -40,35 +33,41 @@ class NotesPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Notes'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.note),
-              title: Text(notes[0]['title']!),
-              subtitle: Text(notes[0]['content']!),
+
+      body: notes.isEmpty
+          ? const Center(
+              child: Text('Belum ada catatan'),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                final note = notes[index];
+
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.note),
+                    title: Text(note['title']!),
+                    subtitle: Text(note['content']!),
+                  ),
+                );
+              },
             ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.storage),
-              title: Text(notes[1]['title']!),
-              subtitle: Text(notes[1]['content']!),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.lightbulb),
-              title: Text(notes[2]['title']!),
-              subtitle: Text(notes[2]['content']!),
-            ),
-          ),
-        ],
-      ),
+
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Akan digunakan pada Modul 04.
+        onPressed: () async {
+          final result = await Navigator.push<Map<String, String>>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddNotePage(),
+            ),
+          );
+
+          if (result != null) {
+            setState(() {
+              notes.add(result);
+            });
+          }
         },
         child: const Icon(Icons.add),
       ),
