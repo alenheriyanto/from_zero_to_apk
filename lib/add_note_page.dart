@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'database/database_helper.dart';
+import 'models/note.dart';
+
 class AddNotePage extends StatefulWidget {
   const AddNotePage({super.key});
 
@@ -20,6 +23,26 @@ class _AddNotePageState extends State<AddNotePage> {
     super.dispose();
   }
 
+  Future<void> saveNote() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    final note = Note(
+      title: titleController.text.trim(),
+      content: contentController.text.trim(),
+      createdAt: DateTime.now().toIso8601String(),
+    );
+
+    await DatabaseHelper.instance.insertNote(note);
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,11 +60,14 @@ class _AddNotePageState extends State<AddNotePage> {
                 decoration: const InputDecoration(
                   labelText: 'Judul',
                   hintText: 'Masukkan judul catatan',
+                  border: OutlineInputBorder(),
                 ),
+                textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Judul wajib diisi';
                   }
+
                   return null;
                 },
               ),
@@ -53,6 +79,7 @@ class _AddNotePageState extends State<AddNotePage> {
                 decoration: const InputDecoration(
                   labelText: 'Isi Catatan',
                   hintText: 'Masukkan isi catatan',
+                  border: OutlineInputBorder(),
                 ),
                 minLines: 5,
                 maxLines: 8,
@@ -72,20 +99,12 @@ class _AddNotePageState extends State<AddNotePage> {
 
               const SizedBox(height: 16),
 
-              ElevatedButton(
-                onPressed: () {
-                  if (!formKey.currentState!.validate()) {
-                    return;
-                  }
-
-                  final note = {
-                    'title': titleController.text.trim(),
-                    'content': contentController.text.trim(),
-                  };
-
-                  Navigator.pop(context, note);
-                },
-                child: const Text('Simpan'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saveNote,
+                  child: const Text('Simpan'),
+                ),
               ),
             ],
           ),

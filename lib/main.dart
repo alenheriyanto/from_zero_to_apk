@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'add_note_page.dart';
+import 'database/database_helper.dart';
+import 'models/note.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,6 +15,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'My Notes',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+        ),
+        useMaterial3: true,
+      ),
       home: const NotesPage(),
     );
   }
@@ -25,7 +35,38 @@ class NotesPage extends StatefulWidget {
 }
 
 class _NotesPageState extends State<NotesPage> {
-  final List<Map<String, String>> notes = [];
+  List<Note> notes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadNotes();
+  }
+
+  Future<void> loadNotes() async {
+    final data = await DatabaseHelper.instance.getNotes();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      notes = data;
+    });
+  }
+
+  Future<void> openAddNote() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddNotePage(),
+      ),
+    );
+
+    if (result == true) {
+      await loadNotes();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,30 +86,18 @@ class _NotesPageState extends State<NotesPage> {
                 final note = notes[index];
 
                 return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: const Icon(Icons.note),
-                    title: Text(note['title']!),
-                    subtitle: Text(note['content']!),
+                    title: Text(note.title),
+                    subtitle: Text(note.content),
                   ),
                 );
               },
             ),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push<Map<String, String>>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddNotePage(),
-            ),
-          );
-
-          if (result != null) {
-            setState(() {
-              notes.add(result);
-            });
-          }
-        },
+        onPressed: openAddNote,
         child: const Icon(Icons.add),
       ),
     );
